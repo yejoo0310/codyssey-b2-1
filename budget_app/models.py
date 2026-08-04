@@ -1,3 +1,5 @@
+import re
+
 from dataclasses import dataclass, field
 from datetime import date as Date
 from typing import Any, Literal
@@ -54,7 +56,7 @@ class Transaction:
 
     """JSONL에서 읽은 딕셔너리를 Transaction으로 변환"""
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> Transaction:
+    def from_dict(cls, data: dict[str, Any]) -> "Transaction":
         try:
             transaction_id = str(data["id"])
             transaction_type = cls._parse_type(data["type"])
@@ -151,3 +153,66 @@ class Transaction:
                 normalized_tags.append(normalized_tag)
 
         return normalized_tags
+    
+    
+"""특정 월에 설정된 예산을 나타내는 데이터 모델"""
+@dataclass
+class Budget(slots=True):
+    month: str
+    amount: int
+    
+    def __post_init__(self) -> None:
+        if not isinstance(self.month, str):
+            raise ValueError("예산 월은 YYYY-MM 형식의 문자열이어야 합니다.")
+
+        self.month = self.month.strip()
+        self._validate_month(self.month)
+        self._validate_amount(self.amount)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "month": self.month,
+            "amount": self.amount
+        }
+        
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "Budget":
+        try:
+            month = cls._parse_month(data["month"])
+            amount = cls._parse_amount(data["amount"])
+        except KeyError as error:
+            missing_field = error.logs[0]
+
+            raise ValueError(f"예산 데이터에 필수 필드가 없습니다 : {missing_field}") from error
+        
+        return cls(
+            month = month,
+            amount = amount
+        )
+        
+    @staticmethod
+    def _parse_month(value: object) -> str:
+        if not isinstance(value, str):
+            raise ValueError("예산 월은 YYYY-MM 형식의 문자열이어야 합니다.")
+        month = value.strip()
+        Budget._validate_month(month)
+        
+        return month
+    
+    @staticmethod
+    def _validate_month(month: str) -> None:
+        if re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", month) is None:
+            raise ValueError("예산 월 형식이 올바르지 않습니다. YYYY-MM 형식으로 입력해 주세요.")
+        
+        try:
+            Date.isoformat(f"{month}-01")
+        except ValueError as error:
+            raise ValueError("예산 월 형식이 올바르지 않습니다. YYYY-MM 형식으로 입력해 주세요.") from error
+    
+    @staticmethod
+    def _validate_amount(amount: int) -> None:
+        if isinstance(amount, bool) or not isinstance(amount, int):
+            raise ValueError("예산 금액은 양수 정수여야 합니다.")
+        
+        if amount <= 0:
+            raise ValueError("예산 금액은 0보다 커야 합니다.")
