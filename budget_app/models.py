@@ -60,7 +60,7 @@ class Transaction:
                     "거래 ID"
                 ),
                 type=cls._parse_type(data["type"]),
-                data=cls._parse_date(data["date"]),
+                date=cls._parse_date(data["date"]),
                 amount=cls._parse_amount(data["amount"]),
                 category=cls._parse_required_text(
                     data["category"],
@@ -233,7 +233,7 @@ class Budget:
                 amount = cls._parse_amount(data["amount"])
             )
         except KeyError as error:
-            missing_field = error.logs[0]
+            missing_field = error.args[0]
 
             raise ValueError(f"예산 데이터에 필수 필드가 없습니다 : {missing_field}") from error
         
