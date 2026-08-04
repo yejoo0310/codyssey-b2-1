@@ -206,8 +206,8 @@ class Transaction:
     
     
 """특정 월에 설정된 예산을 나타내는 데이터 모델"""
-@dataclass
-class Budget(slots=True):
+@dataclass(slots=True)
+class Budget:
     month: str
     amount: int
     
@@ -279,3 +279,34 @@ class Budget(slots=True):
         
         Budget._validate_amount(amount)
         return amount
+    
+    
+"""거래에 사용할 카테고리를 나타내는 데이터 모델"""
+@dataclass(slots=True, frozen=True)
+class Category:
+    name: str
+    
+    def __post_init__(self) -> None:
+        if not isinstance(self.name, str):
+            raise ValueError("카테고리 이름은 문자열이어야 합니다.")
+        
+        normalized_name = self.name.strip()
+        
+        if not normalized_name:
+            raise ValueError("카테고리 이름은 비어 있을 수 없습니다.")
+        
+        object.__setattr__(self, "name", normalized_name)
+    
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "name": self.name
+        }
+        
+    @classmethod
+    def from_dict(cls, data: dict[str, str]) -> "Category":
+        try:
+            name = data["name"]
+        except KeyError as error:
+            raise ValueError("카테고리 데이터에 필수 필드가 없습니다: name") from error
+
+        return cls(name=name)
