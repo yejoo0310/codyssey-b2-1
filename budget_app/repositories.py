@@ -237,3 +237,11 @@ class CategoryRepository(JsonlRepository):
 
     def exists(self, name: str) -> bool:
         return self._find_by_name(name) is not None
+    
+    def add(self, category: Category) -> None:
+        if self.exists(category.name):
+            raise DuplicateError(
+                f"이미 존재하는 카테고리입니다: {category.name}",
+                hint="다른 카테고리 이름을 입력해 주세요."
+            )
+        self._append_dict(category.to_dict())
