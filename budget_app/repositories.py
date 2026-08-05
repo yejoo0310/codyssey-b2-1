@@ -150,13 +150,25 @@ class TransactionRepository(JsonlRepository):
         for data in self._iter_dicts():
             yield Transaction.from_dict(data)
             
-    """ID가 일치하는 거래 반환"""
-    def get_by_id(self, transaction_id: str) -> Transaction:
+    """ID가 일치하는 거래를 찾고, 없으면 None 반환"""        
+    def _find_by_id(self, transaction_id: str) -> Transaction | None:
         for transaction in self.iter_all():
             if transaction.id == transaction_id:
                 return transaction
+        return None
+            
+    """ID가 일치하는 거래 반환"""
+    def get_by_id(self, transaction_id: str) -> Transaction:
+        transaction = self._find_by_id(transaction_id)
         
-        raise NotFoundError(
-            f"거래를 찾을 수 없습니다: {transaction_id}",
-            hint="거래 ID를 확인한 뒤 다시 시도해 주세요."
-        )
+        if transaction is None:
+            raise NotFoundError(
+                f"거래를 찾을 수 없습니다: {transaction_id}",
+                hint="거래 ID를 확인한 뒤 다시 시도해 주세요."
+            )
+        return transaction
+            
+        
+    """주어진 ID의 거래가 존재하는지 확인"""
+    def exists(self, transactioin_id: str) -> bool:
+        return self._find_by_id(transactioin_id) is not None
