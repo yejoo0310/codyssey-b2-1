@@ -7,6 +7,8 @@ from typing import Any, Literal
 from budget_app.validators import (
     normalize_optional_text,
     normalize_required_text,
+    parse_positive_int,
+    validate_positive_int
 )
 
 TransactionType = Literal["income", "expense"]
@@ -40,7 +42,11 @@ class Transaction:
         
         self._validate_type(self.type)
         self._validate_date(self.date)
-        self._validate_amount(self.amount)
+        
+        self.amount = validate_positive_int(
+            self.amount,
+            "거래 금액"
+        )
 
         self.tags = self._normalize_tags(self.tags)
 
@@ -69,7 +75,10 @@ class Transaction:
                 ),
                 type=cls._parse_type(data["type"]),
                 date=cls._parse_date(data["date"]),
-                amount=cls._parse_amount(data["amount"]),
+                amount=parse_positive_int(
+                    data["amount"],
+                    "거래 금액"
+                ),
                 category=cls._parse_required_text(
                     data["category"],
                     "카테고리"
@@ -95,14 +104,6 @@ class Transaction:
             raise ValueError("거래 날짜는 datetime.date 객체여야 합니다.")
     
     @staticmethod
-    def _validate_amount(value: object) -> None:
-        if isinstance(value, bool) or not isinstance(value, int):
-            raise ValueError("거래 금액은 양수 정수여야 합니다.")
-        
-        if value <= 0:
-            raise ValueError("거래 금액은 0보다 커야 합니다.")
-    
-    @staticmethod
     def _parse_type(value: object) -> TransactionType:
         Transaction._validate_type(value)
         
@@ -123,24 +124,6 @@ class Transaction:
             return Date.fromisoformat(value.strip())
         except ValueError as error:
             raise ValueError("거래 날짜 형식이 올바르지 않습니다. YYYY-MM-DD 형식으로 입력해 주세요.") from error
-    
-    @staticmethod
-    def _parse_amount(value: object) -> int:
-        if isinstance(value, bool):
-            raise ValueError("거래 금액은 정수 양수여야 합니다.")
-
-        if isinstance(value, int):
-            amount = value
-        elif isinstance(value, str):
-            normalized = value.strip()
-            if not normalized.isdigit():
-                raise ValueError("거래 금액은 정수 양수여야 합니다.")
-            amount = int(normalized)
-        else:
-            raise ValueError("거래 금액은 정수 양수여야 합니다.")
-        
-        Transaction._validate_amount(amount)
-        return amount
 
     @staticmethod
     def _parse_required_text(
@@ -214,7 +197,11 @@ class Budget:
 
         self.month = self.month.strip()
         self._validate_month(self.month)
-        self._validate_amount(self.amount)
+        
+        self.amount = validate_positive_int(
+            self.amount,
+            "예산 금액"
+        )
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -226,8 +213,11 @@ class Budget:
     def from_dict(cls, data: dict[str, Any]) -> "Budget":
         try:
             return cls(
-                month = cls._parse_month(data["month"]),
-                amount = cls._parse_amount(data["amount"])
+                month=cls._parse_month(data["month"]),
+                amount=parse_positive_int(
+                    data["amount"],
+                    "예산 금액"
+                ) 
             )
         except KeyError as error:
             missing_field = error.args[0]
@@ -241,14 +231,6 @@ class Budget:
 
         if re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", value) is None:
             raise ValueError("예산 월 형식이 올바르지 않습니다. YYYY-MM 형식으로 입력해 주세요.")
-    
-    @staticmethod
-    def _validate_amount(value: int) -> None:
-        if isinstance(value, bool) or not isinstance(value, int):
-            raise ValueError("예산 금액은 양수 정수여야 합니다.")
-        
-        if value <= 0:
-            raise ValueError("예산 금액은 0보다 커야 합니다.")
 
     @staticmethod
     def _parse_month(value: object) -> str:
@@ -258,24 +240,6 @@ class Budget:
         Budget._validate_month(month)
         
         return month
-    
-    @staticmethod
-    def _parse_amount(value: object) -> int:
-        if isinstance(value, bool):
-            raise ValueError("금액은 정수 양수여야 합니다.")
-        
-        if isinstance(value, int):
-            amount = value
-        elif isinstance(value, str):
-            normalized = value.strip()
-            if not normalized.isdigit():
-                raise ValueError("금액은 정수 양수여야 합니다.")
-            amount = int(normalized)
-        else:
-            raise ValueError("금액은 정수 양수여야 합니다.")
-        
-        Budget._validate_amount(amount)
-        return amount
     
     
 """거래에 사용할 카테고리를 나타내는 데이터 모델"""
