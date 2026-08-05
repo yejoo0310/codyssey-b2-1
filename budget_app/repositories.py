@@ -21,8 +21,8 @@ class JsonlRepository:
             self.file_path.touch(exist_ok=True)
         except OSError as error:
             raise DataAccessError(
-                f"[오류] 저장 파일을 준비하지 못했습니다: {self.file_path}",
-                hind="[힌트] 저장 경로와 파일 접근 권한을 확인해 주세요."
+                f"저장 파일을 준비하지 못했습니다: {self.file_path}",
+                hind="저장 경로와 파일 접근 권한을 확인해 주세요."
             ) from error
             
     """JSONL 파일을 한 줄씩 읽어서 딕셔너리로 반환"""
@@ -39,19 +39,44 @@ class JsonlRepository:
                         data = json.loads(line)
                     except json.JSONDecodeError as error:
                         raise DataFormatError(
-                            f"[오류] JSONL 형식이 올바르지 않습니다: {self.file_path}의 {line_number}번째 줄",
-                            hint="[힌트] 해당 줄이 올바른 JSON인지 확인해 주세요."
+                            f"JSONL 형식이 올바르지 않습니다: {self.file_path}의 {line_number}번째 줄",
+                            hint="해당 줄이 올바른 JSON인지 확인해 주세요."
                         ) from error
                     
                     if not isinstance(data, dict):
                         raise DataFormatError(
-                            f"[오류] JSONL 데이터가 객체 형식이 아닙니다: {self.file_path}의 {line_number}번째 줄",
-                            hint="[힌트] 각 줄은 {\"필드\": \"값\"} 형태의 JSON 객체여야 합니다."
+                            f"JSONL 데이터가 객체 형식이 아닙니다: {self.file_path}의 {line_number}번째 줄",
+                            hint="각 줄은 {\"필드\": \"값\"} 형태의 JSON 객체여야 합니다."
                         )
                     
                     yield data
         except OSError as error:
             raise DataAccessError(
-                f"[오류] 저장 파일을 읽지 못했습니다: {self.file_path}",
-                hint="[힌트] 파일 경로와 읽기 권한을 확인해 주세요."
+                f"저장 파일을 읽지 못했습니다: {self.file_path}",
+                hint="파일 경로와 읽기 권한을 확인해 주세요."
+            ) from error
+            
+    """딕셔너리 한 건을 JSONL 파일 끝에 추가"""
+    def _append_dict(self, data: dict[str, Any]) -> None:
+        try:
+            json_line = json.dumps(
+                data,
+                ensure_ascii=False
+            )
+        except (TypeError, ValueError) as error:
+            raise DataFormatError(
+                "JSONL로 저장할 수 없는 데이터가 포함되어 있습니다.",
+                hint="저장 데이터는 문자열, 숫자, 불리언, None, 딕셔너리, 리스트로 구성해야 합니다."
+            ) from error
+        
+        try:
+            with self.file_path.open(
+                "a",
+                encoding="utf-8"
+            ) as file:
+                file.write(json_line + "\n")
+        except OSError as error:
+            raise DataAccessError(
+                f"저장 파일에 데이터를 기록하지 못했습니다: {self.file_path}",
+                hint="저장 경로와 파일 쓰기 권한을 확인해 주세요."
             ) from error
