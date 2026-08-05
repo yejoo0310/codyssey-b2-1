@@ -8,6 +8,7 @@ from typing import Any
 from budget_app.errors import (
     DataAccessError, 
     DataFormatError, 
+    DuplicateError,
     NotFoundError
 )
 from budget_app.models import Transaction
@@ -143,6 +144,11 @@ class JsonlRepository:
 class TransactionRepository(JsonlRepository):
     """거래 한 건 저장"""
     def add(self, transaction: Transaction) -> None:
+        if (self.exists(transaction.id)):
+            raise DuplicateError(
+                f"이미 존재하는 ID입니다: {transaction.id}",
+                hint="새로운 거래 ID를 생성한 뒤 다시 시도해 주세요."
+            )
         self._append_dict(transaction.to_dict())
         
     """저장된 거래를 파일 순서대로 한 건씩 반환"""
