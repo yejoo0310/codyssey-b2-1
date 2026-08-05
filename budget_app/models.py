@@ -265,17 +265,17 @@ class Budget:
     @staticmethod
     def _parse_amount(value: object) -> int:
         if isinstance(value, bool):
-            raise ValueError("거래 금액은 정수 양수여야 합니다.")
+            raise ValueError("금액은 정수 양수여야 합니다.")
         
         if isinstance(value, int):
             amount = value
         elif isinstance(value, str):
             normalized = value.strip()
             if not normalized.isdigit():
-                raise ValueError("거래 금액은 정수 양수여야 합니다.")
+                raise ValueError("금액은 정수 양수여야 합니다.")
             amount = int(normalized)
         else:
-            raise ValueError("거래 금액은 정수 양수여야 합니다.")
+            raise ValueError("금액은 정수 양수여야 합니다.")
         
         Budget._validate_amount(amount)
         return amount
