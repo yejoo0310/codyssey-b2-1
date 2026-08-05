@@ -11,7 +11,7 @@ from budget_app.errors import (
     DuplicateError,
     NotFoundError
 )
-from budget_app.models import Transaction
+from budget_app.models import Category, Transaction
 
 
 """JSONL 저장 파일의 공통 처리를 담당"""
@@ -210,3 +210,30 @@ class TransactionRepository(JsonlRepository):
                     yield saved_transaction.to_dict()
         
         self._rewrite_dicts(remaining_records())
+        
+        
+"""카테고리 데이터를 JSONL 파일에 저장하고 조회하는 저장소"""
+class CategoryRepository(JsonlRepository):
+    def iter_all(self) -> Iterable[Category]:
+        for data in self._iter_dicts():
+            yield Category.from_dict(data)
+            
+    def _find_by_name(self, name: str) -> Category | None:
+        normalized_name = name.strip()
+        for category in self.iter_all():
+            if category.name == normalized_name:
+                return category
+        return None
+
+    def get_by_name(self, name: str) -> Category:
+        category = self._find_by_name(name)
+        
+        if category is None:
+            raise NotFoundError(
+                f"카테고리를 찾을 수 없습니다: {name}",
+                hint="등록된 카테고리 이름을 확인해 주세요."
+            )
+        return category
+
+    def exists(self, name: str) -> bool:
+        return self._find_by_name(name) is not None
