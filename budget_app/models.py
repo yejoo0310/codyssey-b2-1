@@ -4,6 +4,8 @@ from dataclasses import dataclass, field
 from datetime import date as Date
 from typing import Any, Literal
 
+from budget_app.validators import normalize_required_text
+
 TransactionType = Literal["income", "expense"]
 
 
@@ -287,13 +289,7 @@ class Category:
     name: str
     
     def __post_init__(self) -> None:
-        if not isinstance(self.name, str):
-            raise ValueError("카테고리 이름은 문자열이어야 합니다.")
-        
-        normalized_name = self.name.strip()
-        
-        if not normalized_name:
-            raise ValueError("카테고리 이름은 비어 있을 수 없습니다.")
+        normalized_name = normalize_required_text(self.name, "카테고리")
         
         object.__setattr__(self, "name", normalized_name)
     
