@@ -11,7 +11,7 @@ from budget_app.errors import (
     DuplicateError,
     NotFoundError
 )
-from budget_app.models import Category, Transaction
+from budget_app.models import Budget, Category, Transaction
 
 
 """JSONL 저장 파일의 공통 처리를 담당"""
@@ -152,7 +152,7 @@ class TransactionRepository(JsonlRepository):
         self._append_dict(transaction.to_dict())
         
     """저장된 거래를 파일 순서대로 한 건씩 반환"""
-    def iter_all(self) -> Iterable[Transaction]:
+    def iter_all(self) -> Iterator[Transaction]:
         for data in self._iter_dicts():
             yield Transaction.from_dict(data)
             
@@ -214,7 +214,7 @@ class TransactionRepository(JsonlRepository):
         
 """카테고리 데이터를 JSONL 파일에 저장하고 조회하는 저장소"""
 class CategoryRepository(JsonlRepository):
-    def iter_all(self) -> Iterable[Category]:
+    def iter_all(self) -> Iterator[Category]:
         for data in self._iter_dicts():
             yield Category.from_dict(data)
             
@@ -260,3 +260,26 @@ class CategoryRepository(JsonlRepository):
                     yield category.to_dict()
 
         self._rewrite_dicts(remaining_records())
+        
+
+"""월별 예산 데이터를 JSONL 파일에 저장하고 조회하는 저장소"""
+class BudgetRepository(JsonlRepository):
+    def iter_all(self) -> Iterator[Budget]:
+        for data in self._iter_dicts():
+            yield Budget.from_dict(data)
+        
+    def _find_by_month(self, month: str) -> Budget | None:
+        normalized_month = month.strip()
+        
+        for budget in self.iter_all():
+            if budget.month == normalized_month:
+                return budget
+        return None
+    
+    def get_by_month(self, month: str) -> Budget | None:
+        return self._find_by_month(month)
+    
+    def exists(self, month: str) -> bool:
+        return self._find_by_month(month) is not None
+    
+    
