@@ -4,7 +4,10 @@ from dataclasses import dataclass, field
 from datetime import date as Date
 from typing import Any, Literal
 
-from budget_app.validators import normalize_required_text
+from budget_app.validators import (
+    normalize_optional_text,
+    normalize_required_text,
+)
 
 TransactionType = Literal["income", "expense"]
 
@@ -30,7 +33,10 @@ class Transaction:
             self.category,
             "카테고리"
         )
-        self.memo = self._normalize_optional_text(self.memo)
+        self.memo = normalize_optional_text(
+            self.memo,
+            "메모"
+        )
         
         self._validate_type(self.type)
         self._validate_date(self.date)
@@ -68,7 +74,10 @@ class Transaction:
                     data["category"],
                     "카테고리"
                 ),
-                memo=cls._parse_optional_text(data.get("memo", "")),
+                memo=normalize_optional_text(
+                    data.get("memo", ""),
+                    "메모"
+                ),
                 tags=cls._parse_tags(data.get("tags", []))
             )
         except KeyError as error:
@@ -149,16 +158,6 @@ class Transaction:
         return normalized
     
     @staticmethod
-    def _parse_optional_text(value: object) -> str:
-        if value is None:
-            return ""
-        
-        if not isinstance(value, str):
-            raise ValueError("메모는 문자열이어야 합니다.")
-
-        return value.strip()
-    
-    @staticmethod
     def _parse_tags(value: object) -> list[str]:
         if value is None:
             return []
@@ -184,10 +183,6 @@ class Transaction:
         field_name: str
     ) -> str:
         return Transaction._parse_required_text(value, field_name)
-    
-    @staticmethod
-    def _normalize_optional_text(value: object) -> str:
-        return Transaction._parse_optional_text(value)
 
     @staticmethod
     def _normalize_tags(value: object) -> list[str]:
