@@ -187,7 +187,7 @@ class TransactionRepository(JsonlRepository):
     
     """기존 거래를 전달받은 객체로 교체"""
     def update(self, transaction: Transaction) -> bool:
-        if not self.exists(transaction):
+        if not self.exists(transaction.id):
             raise NotFoundError(
                 f"거래를 찾을 수 없습니다: {transaction.id}",
                 hint="거래 ID를 확인한 뒤 다시 시도해 주세요."
