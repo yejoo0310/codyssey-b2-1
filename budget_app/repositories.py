@@ -1,5 +1,7 @@
 import json
-from collections.abc import Iterator
+import os
+import tempfile
+from collections.abc import Iterator, Iterable
 from pathlib import Path
 from typing import Any
 
@@ -80,3 +82,53 @@ class JsonlRepository:
                 f"저장 파일에 데이터를 기록하지 못했습니다: {self.file_path}",
                 hint="저장 경로와 파일 쓰기 권한을 확인해 주세요."
             ) from error
+            
+    """딕셔너리 여러 건을 임시 파일에 기록한 뒤 원본 파일 교체"""
+    def _rewrite_dicts(
+        self,
+        records: Iterable[dict[str, Any]]
+    ) -> None:
+        temp_path: Path | None = None
+        
+        try: 
+            with tempfile.NamedTemporaryFile(
+                mode="w",
+                encoding="utf-8",
+                dir=self.file_path.parent,
+                prefix=f".{self.file_path.name}.",
+                suffix=".tmp",
+                delete=False
+            ) as temp_file:
+                temp_path = Path(temp_file.name)
+                
+                for data in records:
+                    try:
+                        json_line = json.dumps(
+                            data,
+                            ensure_ascii=False
+                        )
+                    except (TypeError, ValueError) as error:
+                        raise DataFormatError(
+                            "JSONL로 저장할 수 없는 데이터가 포함되어 있습니다.",
+                            hint="저장 데이터는 문자열, 숫자, 불리언, None, 딕셔너리, 리스트로 구성해야 합니다."
+                        ) from error
+                        
+                    temp_file.write(json_line + "\n")
+
+                temp_file.flush()
+                os.fsync(temp_file.fileno())
+
+            os.replace(temp_path, self.file_path)
+    
+        except OSError as error:
+            raise DataAccessError(
+                f"저장 파일을 다시 작성하지 못했습니다: {self.file_path}",
+                hint="저장 경로, 파일 쓰기 권한과 디스크 공간을 확인해 주세요."
+            ) from error
+        
+        finally:
+            if temp_path is None:
+                try:
+                    temp_path.unlink(missing_ok=True)
+                except OSError:
+                    pass
