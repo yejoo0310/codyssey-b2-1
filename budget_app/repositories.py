@@ -245,3 +245,18 @@ class CategoryRepository(JsonlRepository):
                 hint="다른 카테고리 이름을 입력해 주세요."
             )
         self._append_dict(category.to_dict())
+        
+    def remove(self, name: str) -> None:
+        normalized_name = name.strip()
+        if not self.exists(normalized_name):
+            raise NotFoundError(
+                f"삭제할 카테고리를 찾을 수 없습니다: {normalized_name}",
+                hint="등록된 카테고리 이름을 확인해 주세요."
+            )
+        
+        def remaining_records() -> Iterable[dict[str, str]]:
+            for category in self.iter_all():
+                if category.name != normalized_name:
+                    yield category.to_dict()
+
+        self._rewrite_dicts(remaining_records())
