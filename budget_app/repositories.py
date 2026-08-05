@@ -187,7 +187,7 @@ class TransactionRepository(JsonlRepository):
                 hint="거래 ID를 확인한 뒤 다시 시도해 주세요."
             )
     
-        def replacement_records() -> Iterable[dict[str, Any]]:
+        def replacement_records() -> Iterator[dict[str, Any]]:
             for saved_transaction in self.iter_all():
                 if saved_transaction.id == transaction.id:
                     yield transaction.to_dict()
@@ -204,7 +204,7 @@ class TransactionRepository(JsonlRepository):
                 hint="거래 ID를 확인한 뒤 다시 시도해 주세요."
             )
         
-        def remaining_records() -> Iterable[dict[str, Any]]:
+        def remaining_records() -> Iterator[dict[str, Any]]:
             for saved_transaction in self.iter_all():
                 if saved_transaction.id != transaction_id:
                     yield saved_transaction.to_dict()
@@ -254,7 +254,7 @@ class CategoryRepository(JsonlRepository):
                 hint="등록된 카테고리 이름을 확인해 주세요."
             )
         
-        def remaining_records() -> Iterable[dict[str, str]]:
+        def remaining_records() -> Iterator[dict[str, str]]:
             for category in self.iter_all():
                 if category.name != normalized_name:
                     yield category.to_dict()
@@ -282,4 +282,16 @@ class BudgetRepository(JsonlRepository):
     def exists(self, month: str) -> bool:
         return self._find_by_month(month) is not None
     
-    
+    def set(self, budget: Budget) -> None:
+        if not self.exists(budget.month):
+            self._append_dict(budget.to_dict())
+            return
+        
+        def replacement_records() -> Iterator[dict[str, int]]:
+            for saved_budget in self.iter_all():
+                if saved_budget.month == budget.month:
+                    yield budget.to_dict()
+                else:
+                    yield saved_budget.to_dict()
+                    
+        self._rewrite_dicts(replacement_records())
