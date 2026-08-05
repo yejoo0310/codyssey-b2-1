@@ -181,7 +181,7 @@ class TransactionRepository(JsonlRepository):
     
     """기존 거래를 전달받은 객체로 교체"""
     def update(self, transaction: Transaction) -> bool:
-        if self._find_by_id(transaction.id) is None:
+        if not self.exists(transaction):
             raise NotFoundError(
                 f"거래를 찾을 수 없습니다: {transaction.id}",
                 hint="거래 ID를 확인한 뒤 다시 시도해 주세요."
@@ -196,3 +196,17 @@ class TransactionRepository(JsonlRepository):
         
         self._rewrite_dicts(replacement_records())
         
+    """ID가 일치하는 거래 삭제"""
+    def delete(self, transaction_id) -> None:
+        if not self.exists(transaction_id):
+            raise NotFoundError(
+                f"거래를 찾을 수 없습니다: {transaction_id}",
+                hint="거래 ID를 확인한 뒤 다시 시도해 주세요."
+            )
+        
+        def remaining_records() -> Iterable[dict[str, Any]]:
+            for saved_transaction in self.iter_all():
+                if saved_transaction.id != transaction_id:
+                    yield saved_transaction.to_dict()
+        
+        self._rewrite_dicts(remaining_records())
