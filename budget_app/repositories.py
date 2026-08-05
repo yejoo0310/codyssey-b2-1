@@ -154,7 +154,13 @@ class TransactionRepository(JsonlRepository):
     """저장된 거래를 파일 순서대로 한 건씩 반환"""
     def iter_all(self) -> Iterator[Transaction]:
         for data in self._iter_dicts():
-            yield Transaction.from_dict(data)
+            try:
+                yield Transaction.from_dict(data)
+            except (TypeError, ValueError) as error:
+                raise DataFormatError(
+                    f"거래 데이터 형식이 올바르지 않습니다: {self.file_path}",
+                    hint="거래의 필드값을 확인해 주세요."
+                ) from error
             
     """ID가 일치하는 거래를 찾고, 없으면 None 반환"""        
     def _find_by_id(self, transaction_id: str) -> Transaction | None:
@@ -216,7 +222,13 @@ class TransactionRepository(JsonlRepository):
 class CategoryRepository(JsonlRepository):
     def iter_all(self) -> Iterator[Category]:
         for data in self._iter_dicts():
-            yield Category.from_dict(data)
+            try:
+                yield Category.from_dict(data)
+            except (TypeError, ValueError) as error:
+                raise DataFormatError(
+                    f"카테고리 데이터 형식이 올바르지 않습니다: {self.file_path}",
+                    hint="카테고리 데이터의 name 필드를 확인해 주세요."
+                ) from error
             
     def _find_by_name(self, name: str) -> Category | None:
         normalized_name = name.strip()
@@ -266,7 +278,13 @@ class CategoryRepository(JsonlRepository):
 class BudgetRepository(JsonlRepository):
     def iter_all(self) -> Iterator[Budget]:
         for data in self._iter_dicts():
-            yield Budget.from_dict(data)
+            try:
+                yield Budget.from_dict(data)
+            except (TypeError, ValueError) as error:
+                raise DataFormatError(
+                    f"예산 데이터 형식이 올바르지 않습니다: {self.file_path}",
+                    hint="예산의 month와 amount 값을 확인해 주세요."
+                ) from error
         
     def _find_by_month(self, month: str) -> Budget | None:
         normalized_month = month.strip()
