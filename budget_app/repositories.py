@@ -5,7 +5,11 @@ from collections.abc import Iterator, Iterable
 from pathlib import Path
 from typing import Any
 
-from budget_app.errors import DataAccessError, DataFormatError
+from budget_app.errors import (
+    DataAccessError, 
+    DataFormatError, 
+    NotFoundError
+)
 from budget_app.models import Transaction
 
 
@@ -145,3 +149,14 @@ class TransactionRepository(JsonlRepository):
     def iter_all(self) -> Iterable[Transaction]:
         for data in self._iter_dicts():
             yield Transaction.from_dict(data)
+            
+    """ID가 일치하는 거래 반환"""
+    def get_by_id(self, transaction_id: str) -> Transaction:
+        for transaction in self.iter_all():
+            if transaction.id == transaction_id:
+                return transaction
+        
+        raise NotFoundError(
+            f"거래를 찾을 수 없습니다: {transaction_id}",
+            hint="거래 ID를 확인한 뒤 다시 시도해 주세요."
+        )
