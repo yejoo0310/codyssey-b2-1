@@ -8,6 +8,7 @@ from budget_app.validators import (
     normalize_optional_text,
     normalize_required_text,
     parse_positive_int,
+    validate_date,
     validate_positive_int
 )
 
@@ -41,7 +42,11 @@ class Transaction:
         )
         
         self._validate_type(self.type)
-        self._validate_date(self.date)
+        
+        self.date = validate_date(
+            self.date,
+            "거래 날짜"
+        )
         
         self.amount = validate_positive_int(
             self.amount,
@@ -97,11 +102,6 @@ class Transaction:
     def _validate_type(value: object) -> None:
         if value not in ("income", "expense"):
             raise ValueError("거래 유형은 income 또는 expense여야 합니다.")
-    
-    @staticmethod
-    def _validate_date(value: object) -> None:
-        if not isinstance(value, Date):
-            raise ValueError("거래 날짜는 datetime.date 객체여야 합니다.")
     
     @staticmethod
     def _parse_type(value: object) -> TransactionType:

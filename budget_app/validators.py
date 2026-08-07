@@ -1,3 +1,6 @@
+from datetime import date as Date
+from datetime import datetime as Datetime
+
 def normalize_required_text(value: object, field_name: str) -> str:
     if not isinstance(value, str):
         raise ValueError(f"{field_name}: 문자열이어야 합니다.")
@@ -48,4 +51,7 @@ def parse_positive_int(value: object, field_name: str) -> int:
         field_name
     )
             
-        
+def validate_date(value: object, field_name: str) -> Date:
+    if isinstance(value, Datetime) or not isinstance(value, Date):
+        raise ValueError(f"{field_name}: datetime.date 객체여야 합니다.")
+    return value
