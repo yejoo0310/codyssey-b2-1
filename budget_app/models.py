@@ -2,18 +2,20 @@ import re
 
 from dataclasses import dataclass, field
 from datetime import date as Date
-from typing import Any, Literal
+from typing import Any
 
 from budget_app.validators import (
     normalize_optional_text,
     normalize_required_text,
     parse_date,
     parse_positive_int,
+    parse_transaction_type,
     validate_date,
-    validate_positive_int
+    validate_positive_int,
+    validate_transaction_type
 )
 
-TransactionType = Literal["income", "expense"]
+from budget_app.types import TransactionType
 
 
 """수입/지출 거래 한 건을 나타내는 데이터 모델"""
@@ -42,7 +44,10 @@ class Transaction:
             "메모"
         )
         
-        self._validate_type(self.type)
+        self.type = validate_transaction_type(
+            self.type,
+            "거래 유형"
+        )
         
         self.date = validate_date(
             self.date,
@@ -79,7 +84,10 @@ class Transaction:
                     data["id"],
                     "거래 ID"
                 ),
-                type=cls._parse_type(data["type"]),
+                type=parse_transaction_type(
+                    data["type"],
+                    "거래 유형"
+                ),
                 date=parse_date(
                     data["date"],
                     "거래 날짜"
@@ -101,20 +109,6 @@ class Transaction:
         except KeyError as error:
             missing_field = error.args[0];
             raise ValueError(f"거래 데이터에 필수 필드가 없습니다: {missing_field}") from error
-
-    @staticmethod
-    def _validate_type(value: object) -> None:
-        if value not in ("income", "expense"):
-            raise ValueError("거래 유형은 income 또는 expense여야 합니다.")
-    
-    @staticmethod
-    def _parse_type(value: object) -> TransactionType:
-        Transaction._validate_type(value)
-        
-        if value == "income":
-            return "income"
-        if value == "expense":
-            return "expense"
 
     @staticmethod
     def _parse_required_text(

@@ -1,6 +1,9 @@
 from datetime import date as Date
 from datetime import datetime as Datetime
 
+from budget_app.types import TransactionType
+
+
 def normalize_required_text(value: object, field_name: str) -> str:
     if not isinstance(value, str):
         raise ValueError(f"{field_name}: 문자열이어야 합니다.")
@@ -75,5 +78,25 @@ def parse_date(value: object, field_name: str) -> Date:
     
     return validate_date(
         parsed,
+        field_name
+    )
+    
+def validate_transaction_type(value: object, field_name: str) -> TransactionType:
+    if value == "income":
+        return "income"
+    
+    if value == "expense":
+        return "expense"
+
+    raise ValueError(f"{field_name}: income 또는 expense여야 합니다.")
+
+def parse_transaction_type(value: object, field_name: str) -> TransactionType:
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name}: 문자열이어야 합니다.")
+    
+    normalized = value.strip().lower()
+    
+    return validate_transaction_type(
+        normalized,
         field_name
     )
