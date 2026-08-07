@@ -55,3 +55,25 @@ def validate_date(value: object, field_name: str) -> Date:
     if isinstance(value, Datetime) or not isinstance(value, Date):
         raise ValueError(f"{field_name}: datetime.date 객체여야 합니다.")
     return value
+
+def parse_date(value: object, field_name: str) -> Date:
+    if isinstance(value, Date):
+        return validate_date(
+            value,
+            field_name
+        )
+    
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name}: YYYY-MM-DD 형식의 문자열이어야 합니다.")
+    
+    normalized = value.strip()
+
+    try:
+        parsed = Date.fromisoformat(normalized)
+    except ValueError as error:
+        raise ValueError(f"{field_name}: YYYY-MM-DD 형식의 올바른 날짜여야 합니다.") from error
+    
+    return validate_date(
+        parsed,
+        field_name
+    )

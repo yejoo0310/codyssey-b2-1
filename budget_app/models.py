@@ -7,6 +7,7 @@ from typing import Any, Literal
 from budget_app.validators import (
     normalize_optional_text,
     normalize_required_text,
+    parse_date,
     parse_positive_int,
     validate_date,
     validate_positive_int
@@ -79,7 +80,10 @@ class Transaction:
                     "거래 ID"
                 ),
                 type=cls._parse_type(data["type"]),
-                date=cls._parse_date(data["date"]),
+                date=parse_date(
+                    data["date"],
+                    "거래 날짜"
+                ),
                 amount=parse_positive_int(
                     data["amount"],
                     "거래 금액"
@@ -111,19 +115,6 @@ class Transaction:
             return "income"
         if value == "expense":
             return "expense"
-    
-    @staticmethod
-    def _parse_date(value: object) -> Date:
-        if isinstance(value, Date):
-            return value
-
-        if not isinstance(value, str):
-            raise ValueError("거래 날짜는 YYYY-MM-DD 형식의 문자열이어야 합니다.")
-        
-        try:
-            return Date.fromisoformat(value.strip())
-        except ValueError as error:
-            raise ValueError("거래 날짜 형식이 올바르지 않습니다. YYYY-MM-DD 형식으로 입력해 주세요.") from error
 
     @staticmethod
     def _parse_required_text(
