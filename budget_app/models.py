@@ -33,11 +33,11 @@ class Transaction:
 
     """모든 생성 경로에서 객체의 최종 상태를 검증"""
     def __post_init__(self) -> None:
-        self.id = self._normalize_required_text(
+        self.id = normalize_required_text(
             self.id,
             "거래 ID"
         )
-        self.category = self._normalize_required_text(
+        self.category = normalize_required_text(
             self.category,
             "카테고리"
         )
@@ -111,28 +111,6 @@ class Transaction:
         except KeyError as error:
             missing_field = error.args[0];
             raise ValueError(f"거래 데이터에 필수 필드가 없습니다: {missing_field}") from error
-
-    @staticmethod
-    def _parse_required_text(
-        value: object,
-        field_name: str
-    ) -> str:
-        if not isinstance(value, str):
-            raise ValueError(f"{field_name}는 문자열이어야 합니다.")
-        
-        normalized = value.strip()
-        
-        if not normalized:
-            raise ValueError(f"{field_name}는 비어 있을 수 없습니다.")
-        
-        return normalized
-    
-    @staticmethod
-    def _normalize_required_text(
-        value: object,
-        field_name: str
-    ) -> str:
-        return Transaction._parse_required_text(value, field_name)
     
     
 """특정 월에 설정된 예산을 나타내는 데이터 모델"""
