@@ -7,8 +7,10 @@ from typing import Any
 from budget_app.validators import (
     normalize_optional_text,
     normalize_required_text,
+    normalize_tags,
     parse_date,
     parse_positive_int,
+    parsed_tags,
     parse_transaction_type,
     validate_date,
     validate_positive_int,
@@ -59,7 +61,7 @@ class Transaction:
             "거래 금액"
         )
 
-        self.tags = self._normalize_tags(self.tags)
+        self.tags = normalize_tags(self.tags)
 
 
     """JSONL에 저장할 수 있는 딕셔너리로 변환"""
@@ -104,7 +106,7 @@ class Transaction:
                     data.get("memo", ""),
                     "메모"
                 ),
-                tags=cls._parse_tags(data.get("tags", []))
+                tags=parsed_tags(data.get("tags", []))
             )
         except KeyError as error:
             missing_field = error.args[0];
@@ -126,48 +128,11 @@ class Transaction:
         return normalized
     
     @staticmethod
-    def _parse_tags(value: object) -> list[str]:
-        if value is None:
-            return []
-        
-        if isinstance(value, str):
-            raw_tags = value.split(",")
-        elif isinstance(value, list):
-            if not all(isinstance(tag, str) for tag in value):
-                raise ValueError("모든 태그는 문자열이어야 합니다.")
-            raw_tags = value
-        else:
-            raise ValueError("태그는 문자열 또는 문자열 목록이어야 합니다.")
-        
-        return [
-            tag.strip()
-            for tag in raw_tags
-            if tag.strip()
-        ]
-        
-    @staticmethod
     def _normalize_required_text(
         value: object,
         field_name: str
     ) -> str:
         return Transaction._parse_required_text(value, field_name)
-
-    @staticmethod
-    def _normalize_tags(value: object) -> list[str]:
-        if not isinstance(value, list):
-            raise ValueError("태그는 문자열 목록이어야 합니다.")
-        
-        if not all(isinstance(tag, str) for tag in value):
-            raise ValueError("모든 태그는 문자열이어야 합니다.")
-        
-        normalized_tags: list[str] = []
-        
-        for tag in value:
-            normalized_tag = tag.strip()
-            if (normalized_tag and normalized_tag not in normalized_tags):
-                normalized_tags.append(normalized_tag)
-        
-        return normalized_tags
     
     
 """특정 월에 설정된 예산을 나타내는 데이터 모델"""

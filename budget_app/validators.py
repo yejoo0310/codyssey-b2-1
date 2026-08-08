@@ -100,3 +100,36 @@ def parse_transaction_type(value: object, field_name: str) -> TransactionType:
         normalized,
         field_name
     )
+    
+def normalize_tags(value: object) -> list[str]:
+    if not isinstance(value, list):
+        raise ValueError("태그: 문자열 목록이어야 합니다.")
+
+    if not all(isinstance(tag, str) for tag in value):
+        raise ValueError("태그: 모든 항목이 문자열이어야 합니다.")
+    
+    normalized_tags: list[str] = []
+    
+    for tag in value:
+        normalized_tag = tag.strip()
+        
+        if (
+            normalized_tag
+            and normalized_tag not in normalized_tags
+        ):
+            normalized_tags.append(normalized_tag)
+    
+    return normalized_tags
+
+def parsed_tags(value: object) -> list[str]:
+    if value is None:
+        return []
+    
+    if isinstance(value, str):
+        raw_tags = value.split(",")
+    elif isinstance(value, list):
+        raw_tags = value
+    else:
+        raise ValueError("태그: 문자열 또는 문자열 목록이어야 합니다.")
+    
+    return normalize_tags(raw_tags)
