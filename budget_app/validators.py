@@ -1,3 +1,5 @@
+import re
+
 from datetime import date as Date
 from datetime import datetime as Datetime
 
@@ -133,3 +135,23 @@ def parsed_tags(value: object) -> list[str]:
         raise ValueError("태그: 문자열 또는 문자열 목록이어야 합니다.")
     
     return normalize_tags(raw_tags)
+
+def validate_month(value: object, field_name: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name}: YYYY-MM 형식의 문자열이어야 합니다.")
+    
+    if re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", value) is None:
+        raise ValueError(f"{field_name}: YYYY-MM 형식이어야 합니다.")
+    
+    return value
+    
+def parse_month(value: object, field_name: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name}: YYYY-MM 형식의 문자열이어야 합니다.")
+    
+    normalized = value.strip()
+    
+    return validate_month(
+        normalized,
+        field_name
+    )

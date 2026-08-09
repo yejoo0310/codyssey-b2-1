@@ -9,10 +9,12 @@ from budget_app.validators import (
     normalize_required_text,
     normalize_tags,
     parse_date,
+    parse_month,
     parse_positive_int,
     parsed_tags,
     parse_transaction_type,
     validate_date,
+    validate_month,
     validate_positive_int,
     validate_transaction_type
 )
@@ -120,11 +122,10 @@ class Budget:
     amount: int
     
     def __post_init__(self) -> None:
-        if not isinstance(self.month, str):
-            raise ValueError("예산 월은 YYYY-MM 형식의 문자열이어야 합니다.")
-
-        self.month = self.month.strip()
-        self._validate_month(self.month)
+        self.month = validate_month(
+            self.month,
+            "예산 월"
+        )
         
         self.amount = validate_positive_int(
             self.amount,
@@ -141,7 +142,10 @@ class Budget:
     def from_dict(cls, data: dict[str, Any]) -> "Budget":
         try:
             return cls(
-                month=cls._parse_month(data["month"]),
+                month=parse_month(
+                    data["month"],
+                    "예산 월"    
+                ),
                 amount=parse_positive_int(
                     data["amount"],
                     "예산 금액"
@@ -151,23 +155,6 @@ class Budget:
             missing_field = error.args[0]
 
             raise ValueError(f"예산 데이터에 필수 필드가 없습니다 : {missing_field}") from error
-        
-    @staticmethod
-    def _validate_month(value: str) -> None:
-        if not isinstance(value, str):
-            raise ValueError("예산 월은 YYYY-MM 형식의 문자열이어야 합니다.")
-
-        if re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", value) is None:
-            raise ValueError("예산 월 형식이 올바르지 않습니다. YYYY-MM 형식으로 입력해 주세요.")
-
-    @staticmethod
-    def _parse_month(value: object) -> str:
-        if not isinstance(value, str):
-            raise ValueError("예산 월은 YYYY-MM 형식의 문자열이어야 합니다.")
-        month = value.strip()
-        Budget._validate_month(month)
-        
-        return month
     
     
 """거래에 사용할 카테고리를 나타내는 데이터 모델"""
