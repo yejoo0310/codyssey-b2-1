@@ -84,7 +84,7 @@ class Transaction:
     def from_dict(cls, data: dict[str, Any]) -> "Transaction":
         try:
             return cls(
-                id=cls._parse_required_text(
+                id=normalize_required_text(
                     data["id"],
                     "거래 ID"
                 ),
@@ -100,7 +100,7 @@ class Transaction:
                     data["amount"],
                     "거래 금액"
                 ),
-                category=cls._parse_required_text(
+                category=normalize_required_text(
                     data["category"],
                     "카테고리"
                 ),
