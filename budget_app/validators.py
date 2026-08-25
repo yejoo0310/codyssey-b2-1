@@ -123,7 +123,7 @@ def normalize_tags(value: object) -> list[str]:
     
     return normalized_tags
 
-def parsed_tags(value: object) -> list[str]:
+def parse_tags(value: object) -> list[str]:
     if value is None:
         return []
     
@@ -177,7 +177,7 @@ def validate_export_filters(
       and start is None
       and end is None  
     ):
-        raise ValueError("export 조건: --month 또는 --form/--to를 지정해야 합니다.")
+        raise ValueError("export 조건: --month 또는 --from/--to를 지정해야 합니다.")
     
     if (
         month is not None

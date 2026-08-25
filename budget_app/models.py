@@ -1,5 +1,3 @@
-import re
-
 from dataclasses import dataclass, field
 from datetime import date as Date
 from typing import Any
@@ -11,7 +9,7 @@ from budget_app.validators import (
     parse_date,
     parse_month,
     parse_positive_int,
-    parsed_tags,
+    parse_tags,
     parse_transaction_type,
     validate_date,
     validate_month,
@@ -108,10 +106,10 @@ class Transaction:
                     data.get("memo", ""),
                     "메모"
                 ),
-                tags=parsed_tags(data.get("tags", []))
+                tags=parse_tags(data.get("tags", []))
             )
         except KeyError as error:
-            missing_field = error.args[0];
+            missing_field = error.args[0]
             raise ValueError(f"거래 데이터에 필수 필드가 없습니다: {missing_field}") from error
     
     
@@ -173,7 +171,7 @@ class Category:
         }
         
     @classmethod
-    def from_dict(cls, data: dict[str, str]) -> "Category":
+    def from_dict(cls, data: dict[str, Any]) -> "Category":
         try:
             name = data["name"]
         except KeyError as error:
