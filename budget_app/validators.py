@@ -155,3 +155,38 @@ def parse_month(value: object, field_name: str) -> str:
         normalized,
         field_name
     )
+    
+def validate_date_range(
+    start: Date | None,
+    end: Date | None
+) -> None:
+    if (
+        start is not None
+        and end is not None
+        and start > end
+    ):
+        raise ValueError("조회 기간: 시작일은 종료일보다 늦을 수 없습니다.")
+    
+def validate_export_filters(
+    month: str | None,
+    start: Date | None,
+    end: Date | None
+) -> None:
+    if (
+      month is None
+      and start is None
+      and end is None  
+    ):
+        raise ValueError("export 조건: --month 또는 --form/--to를 지정해야 합니다.")
+    
+    if (
+        month is not None
+        and (start is not None or end is not None)
+    ):
+        raise ValueError("export 조건: --month와 --from/--to는 함께 사용할 수 없습니다.")
+    
+    if (start is None) != (end is None):
+        raise ValueError("export 기간: --from과 --to를 함께 지정해야 합니다.")
+    
+    if start is not None and end is not None:
+        validate_date_range(start, end)
