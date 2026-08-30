@@ -3,6 +3,7 @@ from datetime import date as Date
 from typing import Any
 
 from budget_app.validators import (
+    normalize_category_name,
     normalize_optional_text,
     normalize_required_text,
     normalize_tags,
@@ -37,9 +38,8 @@ class Transaction:
             self.id,
             "거래 ID"
         )
-        self.category = normalize_required_text(
-            self.category,
-            "카테고리"
+        self.category = normalize_category_name(
+            self.category
         )
         self.memo = normalize_optional_text(
             self.memo,
@@ -98,9 +98,8 @@ class Transaction:
                     data["amount"],
                     "거래 금액"
                 ),
-                category=normalize_required_text(
-                    data["category"],
-                    "카테고리"
+                category=normalize_category_name(
+                    data["category"]
                 ),
                 memo=normalize_optional_text(
                     data.get("memo", ""),
@@ -161,7 +160,7 @@ class Category:
     name: str
     
     def __post_init__(self) -> None:
-        normalized_name = normalize_required_text(self.name, "카테고리")
+        normalized_name = normalize_category_name(self.name)
         
         object.__setattr__(self, "name", normalized_name)
     

@@ -12,6 +12,7 @@ from budget_app.errors import (
     NotFoundError
 )
 from budget_app.models import Budget, Category, Transaction
+from budget_app.validators import normalize_category_name
 
 
 """JSONL 저장 파일의 공통 처리를 담당"""
@@ -231,7 +232,8 @@ class CategoryRepository(JsonlRepository):
                 ) from error
             
     def _find_by_name(self, name: str) -> Category | None:
-        normalized_name = name.strip()
+        normalized_name = normalize_category_name(name)
+        
         for category in self.iter_all():
             if category.name == normalized_name:
                 return category
@@ -259,7 +261,7 @@ class CategoryRepository(JsonlRepository):
         self._append_dict(category.to_dict())
         
     def remove(self, name: str) -> None:
-        normalized_name = name.strip()
+        normalized_name = normalize_category_name(name)
         if not self.exists(normalized_name):
             raise NotFoundError(
                 f"삭제할 카테고리를 찾을 수 없습니다: {normalized_name}",

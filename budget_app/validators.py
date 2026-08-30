@@ -17,6 +17,14 @@ def normalize_required_text(value: object, field_name: str) -> str:
 
     return normalized
 
+def normalize_category_name(value: object) -> str:
+    normalized = normalize_required_text(
+        value,
+        "카테고리"
+    )
+    
+    return normalized.lower()
+
 def normalize_optional_text(value: object, field_name: str) -> str:
     if value is None:
         return ""
