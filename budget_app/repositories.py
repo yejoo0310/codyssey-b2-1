@@ -30,7 +30,7 @@ class JsonlRepository:
         except OSError as error:
             raise DataAccessError(
                 f"저장 파일을 준비하지 못했습니다: {self.file_path}",
-                hind="저장 경로와 파일 접근 권한을 확인해 주세요."
+                hint="저장 경로와 파일 접근 권한을 확인해 주세요."
             ) from error
             
     """JSONL 파일을 한 줄씩 읽어서 딕셔너리로 반환"""
@@ -133,7 +133,7 @@ class JsonlRepository:
             ) from error
         
         finally:
-            if temp_path is None:
+            if temp_path is not None:
                 try:
                     temp_path.unlink(missing_ok=True)
                 except OSError:
@@ -182,11 +182,11 @@ class TransactionRepository(JsonlRepository):
             
         
     """주어진 ID의 거래가 존재하는지 확인"""
-    def exists(self, transactioin_id: str) -> bool:
-        return self._find_by_id(transactioin_id) is not None
+    def exists(self, transaction_id: str) -> bool:
+        return self._find_by_id(transaction_id) is not None
     
     """기존 거래를 전달받은 객체로 교체"""
-    def update(self, transaction: Transaction) -> bool:
+    def update(self, transaction: Transaction) -> None:
         if not self.exists(transaction.id):
             raise NotFoundError(
                 f"거래를 찾을 수 없습니다: {transaction.id}",
@@ -203,7 +203,7 @@ class TransactionRepository(JsonlRepository):
         self._rewrite_dicts(replacement_records())
         
     """ID가 일치하는 거래 삭제"""
-    def delete(self, transaction_id) -> None:
+    def delete(self, transaction_id: str) -> None:
         if not self.exists(transaction_id):
             raise NotFoundError(
                 f"거래를 찾을 수 없습니다: {transaction_id}",
