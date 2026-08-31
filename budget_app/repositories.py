@@ -217,6 +217,27 @@ class TransactionRepository(JsonlRepository):
                     yield saved_transaction.to_dict()
         
         self._rewrite_dicts(remaining_records())
+    
+    def generate_id(self) -> str:
+        max_number = 0
+        
+        for transaction in self.iter_all():
+            number = self._parse_id_number(transaction.id)
+            
+            if number is not None:
+                max_number = max(number, max_number)
+        
+        return f"TX-{max_number + 1:06d}"
+
+    @staticmethod
+    def _parse_id_number(transaction_id: str) -> int | None:
+        if not transaction_id.startswith("TX-"):
+            return None
+        
+        try:
+            return int(transaction_id[3:])
+        except ValueError:
+            return None
         
         
 """카테고리 데이터를 JSONL 파일에 저장하고 조회하는 저장소"""
