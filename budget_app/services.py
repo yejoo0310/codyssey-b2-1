@@ -28,11 +28,7 @@ class TransactionService:
         memo: str = "",
         tags: list[str] | None = None,
     ) -> Transaction:
-        if not self.category_repository.exists(category):
-            raise NotFoundError(
-                f"카테고리를 찾을 수 없습니다: {category}",
-                hint="category add 명령으로 카테고리를 먼저 등록하세요."
-            )
+        saved_category = self.category_repository.get_by_name(category)
         
         transaction_id = self.transaction_repository.generate_id()
         
@@ -101,5 +97,60 @@ class TransactionService:
             
             yield transaction
         
-    # update_transaction()
-    # delete_transaction()
+    def update_transaction(
+        self,
+        transaction_id: str,
+        *,
+        transaction_type: TransactionType | None = None,
+        date: Date | None = None,
+        amount: int | None = None,
+        category: str | None = None,
+        memo: str | None = None,
+        tags: list[str] | None = None,
+    ) -> Transaction:
+        transaction = self.transaction_repository.get_by_id(transaction_id)
+        
+        updated_category = transaction.category
+        if category is not None:
+            saved_category = self.category_repository.get_by_name(category)
+            updated_category = saved_category.name
+            
+        updated = Transaction(
+            id=transaction.id,
+            type=(
+                transaction_type
+                if transaction_type is not None
+                else transaction.type
+            ),
+            date=(
+                date
+                if date is not None
+                else transaction.date
+            ),
+            amount=(
+                amount
+                if amount is not None
+                else transaction.amount
+            ),
+            category=updated_category,
+            memo=(
+                memo
+                if memo is not None
+                else transaction.memo
+            ),
+            tags=(
+                tags
+                if tags is not None
+                else transaction.tags.copy()
+            )
+        )
+        
+        self.transaction_repository.update(updated)
+        
+        return updated
+        
+    def delete_transaction(
+        self,
+        transaction_id: str,
+    ) -> None:
+        self.transaction_repository.delete(transaction_id)
