@@ -2,8 +2,9 @@ from datetime import date as Date
 from typing import Iterator
 
 from budget_app.errors import CategoryInUseError
-from budget_app.models import Transaction, Category
+from budget_app.models import Transaction, Category, Budget
 from budget_app.repositories import (
+    BudgetRepository,
     CategoryRepository,
     TransactionRepository
 )
@@ -190,3 +191,30 @@ class CategoryService:
                 )
             
         self.category_repository.remove(category.name)
+
+
+class BudgetService:
+    def __init__(
+        self,
+        budget_repository: BudgetRepository
+    ):
+        self.budget_repository = budget_repository
+        
+    def set_budget(
+        self,
+        month: str,
+        amount: int
+    ) -> Budget:
+        budget = Budget(
+            month=month,
+            amount=amount
+        )
+        
+        self.budget_repository.set(budget)
+        return budget
+    
+    def get_budget(
+        self,
+        month: str
+    ) -> Budget:
+        return self.budget_repository.get_by_month(month)
