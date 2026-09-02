@@ -1,8 +1,8 @@
 from datetime import date as Date
 from typing import Iterator
 
-from budget_app.errors import NotFoundError
-from budget_app.models import Transaction
+from budget_app.errors import CategoryInUseError
+from budget_app.models import Transaction, Category
 from budget_app.repositories import (
     CategoryRepository,
     TransactionRepository
@@ -154,3 +154,39 @@ class TransactionService:
         transaction_id: str,
     ) -> None:
         self.transaction_repository.delete(transaction_id)
+        
+
+class CategoryService:
+    def __init__(
+        self,
+        category_repository: CategoryRepository,
+        transaction_repository: TransactionRepository,
+    ):
+        self.category_repository = category_repository
+        self.transaction_repository = transaction_repository
+        
+    def add_category(
+        self,
+        name: str
+    ) -> Category:
+        category = Category(name=name)
+        self.category_repository.add(category)
+        return category
+    
+    def list_category(self) -> Iterator[Category]:
+        yield from self.category_repository.iter_all()
+
+    def remove_category(
+        self,
+        name: str
+    ) -> None:
+        category = self.category_repository.get_by_name(name)
+        
+        for transaction in self.transaction_repository.iter_all():
+            if transaction.category == category.name:
+                raise CategoryInUseError(
+                    f"사용 중인 카테고리는 삭제할 수 없습니다: {category.name}",
+                    hint="해당 카테고리를 사용하는 거래를 먼저 수정하거나 삭제해 주세요."
+                )
+            
+        self.category_repository.remove(category.name)
