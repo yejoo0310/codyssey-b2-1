@@ -2,13 +2,19 @@ from datetime import date as Date
 from typing import Iterator
 
 from budget_app.errors import CategoryInUseError
-from budget_app.models import Transaction, Category, Budget
+from budget_app.models import (
+    Budget,
+    Category, 
+    MonthlySummary,
+    Transaction,
+)
 from budget_app.repositories import (
     BudgetRepository,
     CategoryRepository,
     TransactionRepository
 )
 from budget_app.types import TransactionType
+from budget_app.validators import parse_month, validate_positive_int
 
 class TransactionService:
     def __init__(
@@ -218,3 +224,89 @@ class BudgetService:
         month: str
     ) -> Budget:
         return self.budget_repository.get_by_month(month)
+    
+
+class SummaryService:
+    def __init__(
+        self,
+        transaction_repository: TransactionRepository,
+        budget_repository: BudgetRepository
+    ):
+        self.transaction_repository = transaction_repository
+        self.budget_repository = budget_repository
+       
+    def get_monthly_summary(
+        self,
+        month: str
+    ) -> MonthlySummary:
+        month = parse_month(month)
+        
+        transaction_count = 0
+        total_income = 0
+        total_expense = 0
+        
+        for transaction in self.transaction_repository.iter_all():
+            if transaction.date.strftime("%Y-%m") != month:
+                continue
+            
+            transaction_count += 1
+            
+            if transaction.type == "income":
+                total_income += transaction.amount
+            else:
+                total_expense += transaction.amount
+                
+        balance = total_income - total_expense
+        
+        saved_budget = self.budget_repository.get_by_month(month)
+        
+        if saved_budget is None:
+            budget = None
+            budget_usage_rate = None
+            budget_exceeded = None
+        else:
+            budget = saved_budget.amount
+            budget_usage_rate = total_expense / budget * 100
+            budget_exceeded = total_expense > budget
+        
+        return MonthlySummary(
+            month=month,
+            transaction_count=transaction_count,
+            total_income=total_income,
+            total_expense=total_expense,
+            balance=balance,
+            budget=budget,
+            budget_usage_rate=budget_usage_rate,
+            budget_exceeded=budget_exceeded
+        )
+        
+    def get_top_expense_categories(
+        self,
+        month: str,
+        *,
+        top: int = 3
+    ) -> list[tuple[str, int]]:
+        month = parse_month(month)
+        validate_positive_int(top)
+        
+        category_expenses: dict[str, int] = {}
+        
+        for transaction in self.transaction_repository.iter_all():
+            if transaction.date.strftime("%Y-%m") != month:
+                continue
+            
+            if transaction.type != "expense":
+                continue
+            
+            category_expenses[transaction.category] = (
+                category_expenses.get(transaction.category, 0)
+                + transaction.amount
+            )
+        
+        sorted_categories = sorted(
+            category_expenses.items(),
+            key=lambda item: (-item[1], item[0]),
+            reverse=True
+        )
+        
+        return sorted_categories[:top]

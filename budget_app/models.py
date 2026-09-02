@@ -177,3 +177,15 @@ class Category:
             raise ValueError("카테고리 데이터에 필수 필드가 없습니다: name") from error
 
         return cls(name=name)
+
+
+@dataclass(slots=True)
+class MonthlySummary:
+    month: str
+    transaction_count: int
+    total_income: int
+    total_expense: int
+    balance: int
+    budget: int | None
+    budget_usage_rate: float | None
+    budget_exceeded: bool | None
