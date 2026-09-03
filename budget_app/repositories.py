@@ -4,6 +4,7 @@ import tempfile
 from collections.abc import Iterator, Iterable
 from pathlib import Path
 from typing import Any
+from datetime import date as Date
 
 from budget_app.errors import (
     DataAccessError, 
@@ -143,6 +144,10 @@ class JsonlRepository:
 
 """거래 데이터를 JSONL 파일에 저장하고 조회하는 저장소"""
 class TransactionRepository(JsonlRepository):
+    @staticmethod
+    def _sort_key(transaction: Transaction) -> tuple[Date, str]:
+        return (transaction.date, transaction.id)
+    
     """거래 한 건 저장"""
     def add(self, transaction: Transaction) -> None:
         if (self.exists(transaction.id)):
@@ -150,7 +155,21 @@ class TransactionRepository(JsonlRepository):
                 f"이미 존재하는 ID입니다: {transaction.id}",
                 hint="새로운 거래 ID를 생성한 뒤 다시 시도해 주세요."
             )
-        self._append_dict(transaction.to_dict())
+        
+        def sorted_records() -> Iterator[dict[str, Any]]:
+            inserted = False
+            
+            for saved_transaction in self.iter_all():
+                if not inserted and self._sort_key(transaction) > self._sort_key(saved_transaction):
+                    yield transaction.to_dict()
+                    inserted = True
+                    
+                yield saved_transaction.to_dict()
+            
+            if not inserted:
+                yield transaction.to_dict()
+                
+        self._rewrite_dicts(sorted_records())
         
     """저장된 거래를 파일 순서대로 한 건씩 반환"""
     def iter_all(self) -> Iterator[Transaction]:
@@ -194,14 +213,29 @@ class TransactionRepository(JsonlRepository):
                 hint="거래 ID를 확인한 뒤 다시 시도해 주세요."
             )
     
-        def replacement_records() -> Iterator[dict[str, Any]]:
+        def sorted_records() -> Iterator[dict[str, Any]]:
+            inserted = False
+
             for saved_transaction in self.iter_all():
                 if saved_transaction.id == transaction.id:
+                    continue
+
+                if (
+                    not inserted
+                    and self._sort_key(transaction)
+                    > self._sort_key(saved_transaction)
+                ):
                     yield transaction.to_dict()
-                else:
-                    yield saved_transaction.to_dict()
-        
-        self._rewrite_dicts(replacement_records())
+                    inserted = True
+
+                yield saved_transaction.to_dict()
+
+            if not inserted:
+                yield transaction.to_dict()
+
+        self._rewrite_dicts(
+            sorted_records()
+        )
         
     """ID가 일치하는 거래 삭제"""
     def delete(self, transaction_id: str) -> None:
