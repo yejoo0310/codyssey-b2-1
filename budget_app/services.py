@@ -67,9 +67,13 @@ class TransactionService:
             type=transaction_type,
             date=date,
             amount=amount,
-            category=category,
+            category=saved_category.name,
             memo=memo,
-            tags=tags
+            tags=(
+                tags 
+                if tags is not None
+                else []
+            )
         )
         
         self.transaction_repository.add(transaction)
@@ -82,6 +86,8 @@ class TransactionService:
         limit: int = 20,
     ) -> Iterator[Transaction]:
         count = 0
+        
+        validate_positive_int(limit, "조회 개수")
         
         for transaction in self.transaction_repository.iter_all():
             if count >= limit:
@@ -107,19 +113,19 @@ class TransactionService:
             if date_to is not None and transaction.date > date_to:
                 continue
             
-            if category is not None and transaction.category != category.casefold():
+            if category is not None and transaction.category.casefold() != category.strip().casefold():
                 continue
                 
             if transaction_type is not None and transaction.type != transaction_type:
                 continue
             
-            if query is not None and transaction.memo.casefold() != query.casefold:
+            if query is not None and query.casefold() not in transaction.memo.casefold():
                 continue
             
             if (
                 tag is not None
                 and not any(
-                    saved_tag.casefold() != tag.casefold()
+                    saved_tag.casefold() == tag.casefold()
                     for saved_tag in transaction.tags
                 )
             ):
@@ -245,7 +251,7 @@ class BudgetService:
     def get_budget(
         self,
         month: str
-    ) -> Budget:
+    ) -> Budget | None:
         return self.budget_repository.get_by_month(month)
     
 
@@ -262,7 +268,7 @@ class SummaryService:
         self,
         month: str
     ) -> MonthlySummary:
-        month = parse_month(month)
+        month = parse_month(month, "요약 월")
         
         transaction_count = 0
         total_income = 0
@@ -309,8 +315,8 @@ class SummaryService:
         *,
         top: int = 3
     ) -> list[tuple[str, int]]:
-        month = parse_month(month)
-        validate_positive_int(top)
+        month = parse_month(month, "요약 월")
+        validate_positive_int(top, "TOP 개수")
         
         category_expenses: dict[str, int] = {}
         
@@ -328,8 +334,7 @@ class SummaryService:
         
         sorted_categories = sorted(
             category_expenses.items(),
-            key=lambda item: (-item[1], item[0]),
-            reverse=True
+            key=lambda item: (-item[1], item[0])
         )
         
         return sorted_categories[:top]
@@ -463,7 +468,9 @@ class ImportExportService:
         exported = 0
         
         try:
-            with output_path.open("r", encoding="utf-8", newline="") as file:
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+
+            with output_path.open("w", encoding="utf-8", newline="") as file:
                 writer = csv.DictWriter(
                     file,
                     fieldnames=[
