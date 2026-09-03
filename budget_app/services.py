@@ -1,10 +1,20 @@
+import csv
+
 from datetime import date as Date
 from typing import Iterator
+from pathlib import Path
 
-from budget_app.errors import CategoryInUseError
+from budget_app.errors import (
+    CategoryInUseError,
+    DataAccessError,
+    DataFormatError,
+    NotFoundError,
+    ValidationError
+)
 from budget_app.models import (
     Budget,
     Category, 
+    ImportResult,
     MonthlySummary,
     Transaction,
 )
@@ -14,7 +24,20 @@ from budget_app.repositories import (
     TransactionRepository
 )
 from budget_app.types import TransactionType
-from budget_app.validators import parse_month, validate_positive_int
+from budget_app.validators import (
+    parse_month, 
+    validate_export_filters,
+    validate_positive_int
+)
+
+
+CSV_REQUIRED_COLUMNS = {
+    "date",
+    "type",
+    "category",
+    "amount"
+}
+
 
 class TransactionService:
     def __init__(
@@ -310,3 +333,178 @@ class SummaryService:
         )
         
         return sorted_categories[:top]
+    
+
+class ImportExportService:
+    def __init__(
+        self,
+        transaction_repository: TransactionRepository,
+        category_repository: CategoryRepository
+    ):
+        self.transaction_repository = transaction_repository
+        self.category_repository = category_repository
+    
+    def import_csv(
+        self,
+        source_path: Path
+    ) -> ImportResult:
+        imported = 0
+        skipped = 0
+        
+        try:
+            with source_path.open("r", encoding="utf-8", newline="") as file:
+                reader = csv.DictReader(file)
+
+                if reader.fieldnames is None:
+                    raise DataFormatError(
+                        "CSV 헤더를 찾을 수 없습니다.",
+                        hint=("CSV 첫 줄에 date, type, category, amount 등의 헤더가 있는지 확인해 주세요."),
+                    )
+
+                headers = [
+                    header.strip()
+                    for header in reader.fieldnames
+                ]
+                reader.fieldnames = headers
+
+                missing_columns = (
+                    CSV_REQUIRED_COLUMNS - set(headers)
+                )
+
+                if missing_columns:
+                    missing = ", ".join(sorted(missing_columns))
+
+                    raise DataFormatError(
+                        f"CSV 필수 컬럼이 없습니다: {missing}",
+                        hint=("date, type, category, amount 컬럼을 확인해 주세요."),
+                    )
+
+                for row in reader:
+                    if not any(
+                        str(value).strip()
+                        for value in row.values()
+                        if value is not None
+                    ):
+                        continue
+
+                    try:
+                        saved_category = (
+                            self.category_repository.get_by_name(row["category"] or "")
+                        )
+
+                        tags_text = row.get("tags") or ""
+
+                        tags = [
+                            tag.strip()
+                            for tag in tags_text.split(",")
+                            if tag.strip()
+                        ]
+
+                        transaction = Transaction.from_dict(
+                            {
+                                "id": self.transaction_repository.generate_id(),
+                                "type": row["type"],
+                                "date": row["date"],
+                                "amount": row["amount"],
+                                "category": saved_category.name,
+                                "memo": row.get("memo") or "",
+                                "tags": tags,
+                            }
+                        )
+
+                        self.transaction_repository.add(transaction)
+
+                    except (
+                        TypeError,
+                        ValueError,
+                        NotFoundError,
+                    ):
+                        skipped += 1
+                        continue
+
+                    imported += 1
+
+        except OSError as error:
+            raise DataAccessError(
+                f"CSV 파일을 읽지 못했습니다: {source_path}",
+                hint="파일 경로와 읽기 권한을 확인해 주세요.",
+            ) from error
+
+        except csv.Error as error:
+            raise DataFormatError(
+                f"CSV 형식이 올바르지 않습니다: {source_path}",
+                hint="CSV 파일의 헤더와 각 행의 형식을 확인해 주세요.",
+            ) from error
+
+        return ImportResult(
+            imported=imported,
+            skipped=skipped,
+        )
+    
+    def export_csv(
+        self,
+        output_path: Path,
+        *,
+        month: str | None = None,
+        date_from: Date | None = None,
+        date_to: Date | None = None
+    ) -> int:
+        try: 
+            validate_export_filters(month, date_from, date_to)
+            
+            if month is not None:
+                month = parse_month(month, "export 월")
+        except ValueError as error:
+            raise ValidationError(
+                str(error),
+                hint="export 조건을 확인한 뒤 다시 시도해 주세요."
+            ) from error
+            
+        exported = 0
+        
+        try:
+            with output_path.open("r", encoding="utf-8", newline="") as file:
+                writer = csv.DictWriter(
+                    file,
+                    fieldnames=[
+                        "date",
+                        "type",
+                        "category",
+                        "amount",
+                        "memo",
+                        "tags"
+                    ]
+                )
+                
+                writer.writeheader()
+                
+                for transaction in self.transaction_repository.iter_all():
+                    if month is not None:
+                        if transaction.date.strftime("%Y-%m") != month:
+                            continue
+                        
+                    if date_from is not None and date_to is not None:
+                        if not date_from <= transaction.date <= date_to:
+                            continue
+                    
+                    writer.writerow(
+                        {
+                            "date": transaction.date.isoformat(),
+                            "type": transaction.type,
+                            "category": transaction.category,
+                            "amount": transaction.amount,
+                            "memo": transaction.memo,
+                            "tags": ",".join(transaction.tags)
+                        }
+                    )
+                    
+                    exported += 1
+                    
+        except OSError as error:
+            raise DataAccessError(
+                f"CSV 파일을 저장하지 못했습니다: {output_path}",
+                hint="저장 경로와 파일 쓰기 권한을 확인해 주세요."
+            ) from error
+        
+        return exported
+        

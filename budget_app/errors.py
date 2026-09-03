@@ -29,3 +29,6 @@ class DuplicateError(BudgetAppError):
 
 class CategoryInUseError(BudgetAppError):
     """거래에서 사용 중인 카테고리를 삭제하려는 경우"""
+    
+class ValidationError(BudgetAppError):
+    """사용자 입력이나 명령 옵션이 유효하지 않은 경우"""

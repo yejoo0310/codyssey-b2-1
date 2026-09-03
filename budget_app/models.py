@@ -189,3 +189,9 @@ class MonthlySummary:
     budget: int | None
     budget_usage_rate: float | None
     budget_exceeded: bool | None
+    
+
+@dataclass(slots=True)
+class ImportResult:
+    imported: int
+    skipped: int
