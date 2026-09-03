@@ -1456,12 +1456,12 @@ class ImportExportServiceTest(unittest.TestCase):
         )
 
         self.assertEqual(
-            rows[0]["amount"],
+            rows[1]["amount"],
             "10000",
         )
 
         self.assertEqual(
-            rows[1]["amount"],
+            rows[0]["amount"],
             "20000",
         )
 

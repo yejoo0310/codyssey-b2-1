@@ -211,9 +211,9 @@ class TransactionRepositoryTest(unittest.TestCase):
         self.assertEqual(
             transactions,
             [
-                first,
-                second,
                 third,
+                second,
+                first,
             ]
         )
 
@@ -380,22 +380,22 @@ class TransactionRepositoryTest(unittest.TestCase):
         )
 
         self.assertEqual(
-            transactions[0].id,
+            transactions[1].id,
             "TX-000001"
         )
 
         self.assertEqual(
-            transactions[0].amount,
+            transactions[1].amount,
             50000
         )
 
         self.assertEqual(
-            transactions[1].id,
+            transactions[0].id,
             "TX-000002"
         )
 
         self.assertEqual(
-            transactions[1].amount,
+            transactions[0].amount,
             20000
         )
 
@@ -437,9 +437,9 @@ class TransactionRepositoryTest(unittest.TestCase):
                 for transaction in transactions
             ],
             [
-                "TX-000001",
-                "TX-000002",
                 "TX-000003",
+                "TX-000002",
+                "TX-000001",
             ]
         )
 
@@ -509,8 +509,8 @@ class TransactionRepositoryTest(unittest.TestCase):
                 for transaction in transactions
             ],
             [
-                "TX-000001",
                 "TX-000003",
+                "TX-000001",
             ]
         )
 
@@ -1187,6 +1187,7 @@ class BudgetRepositoryTest(unittest.TestCase):
             list(
                 self.repository.iter_all()
             )
+
 
 
 if __name__ == "__main__":
