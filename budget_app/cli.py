@@ -310,7 +310,10 @@ def handle_summary(
             print("[경고] 예산을 초과했습니다.")
 
     print()
-    print(f"지출 TOP {args.top}")
+    if args.top is None:
+        print("카테고리별 지출")
+    else:
+        print(f"지출 TOP {args.top}")
 
     for rank, (category, amount) in enumerate(
         top_categories,
@@ -471,8 +474,7 @@ def build_parser() -> argparse.ArgumentParser:
     summary_parser.add_argument(
         "--top",
         type=int,
-        default=3,
-        help="지출 카테고리 TOP N (기본값: 3)",
+        help="지출 카테고리 TOP N개",
     )
     summary_parser.set_defaults(
         handler=handle_summary

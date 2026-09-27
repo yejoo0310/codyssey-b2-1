@@ -313,32 +313,37 @@ class SummaryService:
         self,
         month: str,
         *,
-        top: int = 3
+        top: int | None = None
     ) -> list[tuple[str, int]]:
         month = parse_month(month, "요약 월")
-        validate_positive_int(top, "TOP 개수")
-        
+
+        if top is not None:
+            validate_positive_int(top, "TOP 개수")
+
         category_expenses: dict[str, int] = {}
-        
+
         for transaction in self.transaction_repository.iter_all():
             if transaction.date.strftime("%Y-%m") != month:
                 continue
-            
+
             if transaction.type != "expense":
                 continue
-            
+
             category_expenses[transaction.category] = (
                 category_expenses.get(transaction.category, 0)
                 + transaction.amount
             )
-        
+
         sorted_categories = sorted(
             category_expenses.items(),
             key=lambda item: (-item[1], item[0])
         )
-        
+
+        if top is None:
+            return sorted_categories
+
         return sorted_categories[:top]
-    
+        
 
 class ImportExportService:
     def __init__(
