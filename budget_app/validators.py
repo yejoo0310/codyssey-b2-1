@@ -3,7 +3,7 @@ import re
 from datetime import date as Date
 from datetime import datetime as Datetime
 
-from budget_app.types import TransactionType
+from budget_app.type_aliases import TransactionType
 
 
 def normalize_required_text(value: object, field_name: str) -> str:

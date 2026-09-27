@@ -23,7 +23,7 @@ from budget_app.repositories import (
     CategoryRepository,
     TransactionRepository
 )
-from budget_app.types import TransactionType
+from budget_app.type_aliases import TransactionType
 from budget_app.validators import (
     parse_month, 
     validate_export_filters,

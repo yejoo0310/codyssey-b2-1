@@ -18,7 +18,7 @@ from budget_app.validators import (
     validate_transaction_type
 )
 
-from budget_app.types import TransactionType
+from budget_app.type_aliases import TransactionType
 
 
 """수입/지출 거래 한 건을 나타내는 데이터 모델"""
