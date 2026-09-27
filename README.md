@@ -527,12 +527,15 @@ CLI 명령 형식 자체가 잘못된 경우에도 오류 원인과 `--help` 사
 budget_app/
 ├── __main__.py
 ├── cli.py
+├── cli_parser.py
+├── cli_handlers.py
+├── dependencies.py
 ├── decorators.py
 ├── errors.py
 ├── models.py
 ├── repositories.py
 ├── services.py
-├── types_aliases.py
+├── type_aliases.py
 └── validators.py
 ```
 
@@ -544,7 +547,10 @@ budget_app/
 | `validators.py` | 입력값 파싱, 정규화 및 검증 |
 | `repositories.py` | JSONL 파일 읽기/쓰기 및 영구 저장 |
 | `services.py` | 거래, 카테고리, 예산, 요약, CSV 기능의 비즈니스 로직 |
-| `cli.py` | 명령어 파싱, 사용자 입출력, handler 연결 |
+| `cli.py` | CLI 실행 흐름을 담당하며 파서, 서비스, handler를 연결 |
+| `cli_parser.py` | argparse 기반 명령어, 서브 명령어, 옵션 정의 |
+| `cli_handlers.py` | 사용자 입력을 받고 Service를 호출한 뒤 결과 출력 |
+| `dependencies.py` | Repository와 Service 객체 생성 및 의존성 연결 |
 | `errors.py` | 애플리케이션에서 예상 가능한 예외 정의 |
 | `decorators.py` | CLI 공통 예외 처리를 담당하는 데코레이터 |
 | `__main__.py` | `python -m budget_app` 실행 진입점 |
